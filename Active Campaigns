@@ -1,0 +1,31 @@
+1. Problem Breakdown (Simple Summary)
+Goal: Create a performance summary report for each ad campaign.
+Filter rule: Only include campaigns that have more than 15 ad views (impressions > 15).
+Columns needed:
+Campaign name (ad_campaign)
+Total views (impressions)
+Total money earned (total_revenue)
+Click-Through Rate as a percentage rounded to 1 decimal place (ctr)
+Sorting rule: Highest ctr first. If two campaigns tie on ctr, sort them alphabetically (A → Z) by ad_campaign.
+
+2. The Intuition (How to Think About It)
+Imagine you have a giant box of 100 million paper receipts, and each receipt represents one time someone saw an ad.
+Sort receipts into folders (GROUP BY): Since we want numbers per campaign, create one folder for each ad_campaign and drop its receipts inside.
+Toss out small folders (HAVING): Count the receipts in each folder. If a folder has 15 or fewer receipts, throw it in the trash. 
+(Interview tip: We use HAVING instead of WHERE because we are filtering folders after counting them, not individual receipts).
+Do the math for each surviving folder (SELECT):
+Impressions: Count total receipts in the folder (COUNT(*)).
+Revenue: Add up the revenue written on those receipts (SUM(revenue)).
+CTR %: Count only the receipts marked clicked = TRUE (turn TRUE into 1 and FALSE into 0, then SUM them), divide by total receipts in the folder, multiply by 100.0 (use .0 so SQL doesn't chop off decimals!), and round to 1 decimal place.
+Arrange the final report (ORDER BY): Put the highest ctr at the top (DESC), and use ad_campaign ASC to break ties.
+
+SELECT 
+    ad_campaign,
+    COUNT(*) AS impressions,
+    SUM(revenue) AS total_revenue,
+    ROUND(100.0 * SUM(CASE WHEN clicked THEN 1 ELSE 0 END) / COUNT(*), 1) AS ctr
+FROM ad_impressions
+GROUP BY ad_campaign
+HAVING COUNT(*) > 15
+ORDER BY ctr DESC, ad_campaign ASC;
+

@@ -1,0 +1,29 @@
+1. Problem Breakdown (Simple Summary)
+Goal: Build one clean, unique list of every API endpoint across two separate tables (api_calls and rate_limits).
+Cleaning Rule 1 (Trailing slashes): Paths like /api/v1/orders/ and /api/v1/orders are the same endpoint—strip any trailing / at the end.
+Cleaning Rule 2 (Group auth sub-routes): Any path starting with /api/v1/auth (like /api/v1/auth/login or /api/v1/auth/logout) should be rolled up into just /api/v1/auth.
+Deduplication Rule: Each cleaned endpoint should appear only once in the final output.
+
+2. The Intuition (How to Think About It)
+Imagine you have two messy lists of website URLs written by different teams—one from server logs (api_calls) and one from security settings (rate_limits). Before you can combine them into one master list, you need to standardize how the URLs are written so duplicates actually match.
+Stack the two lists together (UNION vs. UNION ALL):
+We want endpoints that appear in either table. In SQL, stacking two tables vertically is done with UNION.
+Interview Tip: UNION automatically removes duplicate rows, whereas UNION ALL keeps duplicates. (Note: On huge tables like 500M rows, it's best to clean the strings first or deduplicate per table before combining, or use UNION on the cleaned values so duplicates created after cleaning—like /api/v1/auth/login and /api/v1/auth/token both becoming /api/v1/auth—also get merged into one row!)
+Strip trailing slashes (RTRIM or TRIM):
+RTRIM(endpoint, '/') chops off any / at the far right end of the text. So /api/v1/orders/ becomes /api/v1/orders.
+Collapse /api/v1/auth/... into /api/v1/auth (CASE WHEN + LIKE):
+Check if the cleaned path starts with /api/v1/auth using LIKE '/api/v1/auth%' (the % wildcard means "followed by anything or nothing").
+If it matches, replace the whole string with '/api/v1/auth'. Otherwise, keep the trimmed path as-is.
+Deduplicate after cleaning:
+If you apply UNION after cleaning both tables (or wrap a UNION ALL inside a SELECT DISTINCT), /api/v1/auth/login and /api/v1/auth/signup both turn into /api/v1/auth and automatically merge into a single row.
+
+with endpoints as (
+select endpoint from api_calls
+union
+select endpoint from rate_limits 
+)
+select distinct
+  case when RTRIM(TRIM(endpoint),'/') like '/api/v1/auth%' then '/api/v1/auth'
+       else RTRIM(TRIM(endpoint),'/') 
+  end as endpoint
+from endpoints

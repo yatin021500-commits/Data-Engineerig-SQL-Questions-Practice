@@ -1,0 +1,27 @@
+WITH def AS (
+    SELECT 
+        st.student_id,
+        st.student_name,
+        su.subject_name
+    FROM Students AS st
+    CROSS JOIN Subjects AS su
+),
+abc AS (
+    SELECT 
+        d.student_id,
+        d.student_name,
+        d.subject_name,
+        COUNT(e.subject_name) AS attended_exams
+    FROM def AS d
+    LEFT JOIN Examinations AS e 
+        ON d.student_id = e.student_id 
+       AND d.subject_name = e.subject_name
+    GROUP BY 1, 2, 3
+)
+SELECT 
+    a.student_id,
+    a.student_name,
+    a.subject_name,
+    a.attended_exams
+FROM abc AS a
+ORDER BY 1, 3;

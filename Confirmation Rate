@@ -1,0 +1,14 @@
+# Write your MySQL query statement below
+with abc as (
+    select 
+    user_id,
+    SUM(case when action = 'confirmed' then 1 else 0 end) as confirmed_count,
+    count(*) as total_count
+    from confirmations
+    group by user_id
+)
+select 
+s.user_id,
+ROUND( COALESCE (1.0 * b.confirmed_count / b.total_count , 0) , 2) as confirmation_rate
+from signups as s
+left join abc as b on s.user_id = b.user_id
